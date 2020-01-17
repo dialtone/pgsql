@@ -75,7 +75,6 @@ where (id=$1 and nickname=$2)
 order by name
 limit 10
 offset 5`, a.String())
-
 }
 
 func TestSelectClause(t *testing.T) {
@@ -110,6 +109,40 @@ func TestFromClause(t *testing.T) {
 	err := s.Apply(pgsql.From("users"))
 	require.NoError(t, err)
 	assert.Equal(t, "select *\nfrom users", s.String())
+}
+
+func TestJoinClause(t *testing.T) {
+	s := pgsql.NewStatement()
+
+	err := s.Apply(pgsql.From("users"))
+	require.NoError(t, err)
+	err = s.Apply(pgsql.Join("permissions on users.id=permissions.user_id"))
+	require.NoError(t, err)
+	assert.Equal(t, "select *\nfrom users\njoin permissions on users.id=permissions.user_id", s.String())
+
+	s = pgsql.NewStatement()
+
+	err = s.Apply(pgsql.From("users"))
+	require.NoError(t, err)
+	err = s.Apply(pgsql.LeftJoin("permissions on users.id=permissions.user_id"))
+	require.NoError(t, err)
+	assert.Equal(t, "select *\nfrom users\nleft join permissions on users.id=permissions.user_id", s.String())
+
+	s = pgsql.NewStatement()
+
+	err = s.Apply(pgsql.From("users"))
+	require.NoError(t, err)
+	err = s.Apply(pgsql.RightJoin("permissions on users.id=permissions.user_id"))
+	require.NoError(t, err)
+	assert.Equal(t, "select *\nfrom users\nright join permissions on users.id=permissions.user_id", s.String())
+
+	s = pgsql.NewStatement()
+
+	err = s.Apply(pgsql.From("users"))
+	require.NoError(t, err)
+	err = s.Apply(pgsql.OuterJoin("permissions on users.id=permissions.user_id"))
+	require.NoError(t, err)
+	assert.Equal(t, "select *\nfrom users\nouter join permissions on users.id=permissions.user_id", s.String())
 }
 
 func TestWhereClause(t *testing.T) {

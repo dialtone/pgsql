@@ -23,6 +23,7 @@ type Statement struct {
 	Type          statementType
 	SelectClause  SelectClause
 	FromClause    FromClause
+	JoinClause    JoinClause
 	WhereClause   WhereClause
 	OrderByClause OrderByClause
 	LimitClause   LimitClause
@@ -73,6 +74,7 @@ func (s *Statement) String() string {
 	case TypeSelect:
 		f(s.SelectClause.String())
 		f(s.FromClause.String())
+		f(s.JoinClause.String())
 		f(s.WhereClause.String())
 		f(s.OrderByClause.String())
 		f(s.LimitClause.String())
@@ -210,6 +212,44 @@ func Or(sql string, values ...interface{}) StatementOption {
 			s.WhereClause = WhereClause(fmt.Sprintf("(%s or %s)", string(s.WhereClause), sql))
 		}
 
+		return nil
+	}
+}
+
+type JoinClause string
+
+func (jc JoinClause) String() string {
+	if len(jc) == 0 {
+		return ""
+	}
+
+	return string(jc)
+}
+
+func Join(sql string, values ...interface{}) StatementOption {
+	return pjoin("join", sql, values...)
+}
+
+func LeftJoin(sql string, values ...interface{}) StatementOption {
+	return pjoin("left join", sql, values...)
+}
+
+func RightJoin(sql string, values ...interface{}) StatementOption {
+	return pjoin("right join", sql, values...)
+}
+
+func OuterJoin(sql string, values ...interface{}) StatementOption {
+	return pjoin("outer join", sql, values...)
+}
+
+func pjoin(joinType, sql string, values ...interface{}) StatementOption {
+	return func(s *Statement) error {
+		sql = fmt.Sprintf("%s %s", joinType, s.Args.Format(sql, values...))
+		if len(s.JoinClause) == 0 {
+			s.JoinClause = JoinClause(sql)
+		} else {
+			s.JoinClause = JoinClause(fmt.Sprintf("%s %s", string(s.JoinClause), sql))
+		}
 		return nil
 	}
 }
